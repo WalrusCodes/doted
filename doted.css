@@ -1,5 +1,9 @@
 #canvas {
-  width: 300px;
-  height: 300px;
   border: 1px solid black;
+}
+
+#errorMessage {
+  color: red;
+  /* start out invisible */
+  display: none;
 }
