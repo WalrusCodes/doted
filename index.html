@@ -9,7 +9,7 @@
   </head>
 
   <body>
-    <div>
+    <div class="button-bar">
       <button id="loadImageButton">Load image</button>
       <input
         type="file"
@@ -17,8 +17,12 @@
         accept="image/*"
         style="display: none"
       />
-      <span id="errorMessage"></span>
+      <span id="errorMessage" class="error-message"></span>
     </div>
-    <div><canvas id="canvas"></canvas></div>
+    <div class="canvas-wrapper"><canvas id="canvas"></canvas></div>
+    <div class="help">
+      Double click to add a point. Double click on an existing point to delete
+      it.
+    </div>
   </body>
 </html>

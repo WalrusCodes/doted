@@ -1,9 +1,21 @@
+.button-bar {
+  margin: 10px;
+}
+
 #canvas {
   border: 1px solid black;
 }
 
-#errorMessage {
+.canvas-wrapper {
+  margin: 10px;
+}
+
+.error-message {
   color: red;
   /* start out invisible */
   display: none;
+}
+
+.help {
+  margin: 10px;
 }

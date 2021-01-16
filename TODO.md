@@ -5,13 +5,14 @@
 Rough breakdown of next steps / tasks.
 
 - [ ] **MVP: We Got Holes**
-  - [ ] import an image (file picker)
-    - [ ] display image
-  - [ ] points:
-    - [ ] add
-    - [ ] move
-    - [ ] delete
+  - [x] import an image (file picker)
+    - [x] display image
+  - [x] points:
+    - [x] add
+    - [x] move
+    - [x] delete
   - [ ] export points to an SVG file
+  - [ ] set up github pages or similar to host the page
 - [ ] **We Got Lines**
   - [ ] allow connecting any two points with a line
   - [ ] pick color for line
