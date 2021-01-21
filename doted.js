@@ -66,9 +66,6 @@ function initCanvas() {
 
   // Create Fabric.js Canvas object, point it at our canvas by id.
   canvas = new fabric.Canvas("canvas");
-  // For now, disable group selection.
-  canvas.selection = false;
-  // canvas.add(new fabric.Rect({ width: 10, height: 20 }));
 
   // Handle a doubleclick on canvas - if we click an existing point, remove it,
   // otherwise, create it.
@@ -94,8 +91,16 @@ function initCanvas() {
       fill: "rgba(0, 0, 0, 0.5)",
       stroke: "white",
       strokeWidth: 2,
+      // Don't show the border around a point when it's selected.
+      hasBorders: false,
     });
     canvas.add(c);
+  });
+  // When a selection is made (by clicking and dragging), Fabric creates a
+  // temporary group. We disable controls on it so that it can't be scaled or
+  // rotated. It still can be dragged around to move multiple points.
+  canvas.on("selection:created", (ev) => {
+    ev.target.set("hasControls", false);
   });
 }
 
