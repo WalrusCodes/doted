@@ -11,7 +11,7 @@ Rough breakdown of next steps / tasks.
     - [x] add
     - [x] move
     - [x] delete
-  - [ ] export points to an SVG file
+  - [x] export points to an SVG file
   - [ ] set up github pages or similar to host the page
 - [ ] **We Got Lines**
   - [ ] allow connecting any two points with a line

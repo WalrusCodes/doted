@@ -1,5 +1,4 @@
 let canvas = null;
-let addHoleMode = false;
 // fabric.Image object if one already is inserted.
 let insertedImage = null;
 
@@ -33,6 +32,7 @@ function handleFileInput(fileList) {
     return;
   }
 
+  // TODO: remove the object URL if one was created in the past.
   fabric.Image.fromURL(URL.createObjectURL(file), function (img) {
     if (img.width === 0) {
       showError("failed to load image");
@@ -104,14 +104,35 @@ function initCanvas() {
   });
 }
 
+// Saves the dots to SVG.
+function saveSvg() {
+  const blob = new Blob([canvas.toSVG()], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "doted.svg";
+  const handler = () => {
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      this.removeEventListener("click", handler);
+    }, 150);
+  };
+  a.addEventListener("click", handler, false);
+  a.click();
+}
+
 // Called on page load, sets up handlers & canvas.
 function init() {
   const loadBtn = document.getElementById("loadImageButton");
+  // Clicking on "Load image" button opens the hidden filepicker.
+  loadBtn.addEventListener("click", () => fileInput.click(), false);
+
+  const saveSvgBtn = document.getElementById("saveSvgButton");
+  saveSvgBtn.addEventListener("click", () => saveSvg(), false);
+
   const fileInput = document.getElementById("fileInput");
 
   initCanvas();
-  // Clicking on "Load image" button opens the hidden filepicker.
-  loadBtn.addEventListener("click", () => fileInput.click(), false);
   // Picking a file calls handleFileInput.
   fileInput.addEventListener(
     "change",
