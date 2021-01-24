@@ -12,7 +12,8 @@ Rough breakdown of next steps / tasks.
     - [x] move
     - [x] delete
   - [x] export points to an SVG file
-  - [ ] set up github pages or similar to host the page
+  - [x] set up github pages or similar to host the page
+  - [ ] add ability to define outline with a couple simple shapes?
 - [ ] **We Got Lines**
   - [ ] allow connecting any two points with a line
   - [ ] pick color for line
@@ -27,7 +28,9 @@ Rough breakdown of next steps / tasks.
 - **Misc**
   - [ ] license
   - [ ] favicon
+  - [ ] undo/redo: see [this](https://medium.com/@alm.ozdmr/fabric-js-history-operations-undo-redo-and-useful-tips-edeab8d4f48d)
 
 ### Ideas for Later
 
 - Fancier stitches, not just straight lines
+- Symmetry mode

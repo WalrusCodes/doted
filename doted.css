@@ -6,6 +6,10 @@
   border: 1px solid black;
 }
 
+.mode {
+  margin: 10px;
+}
+
 .canvas-wrapper {
   margin: 10px;
 }
