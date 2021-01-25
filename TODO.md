@@ -13,7 +13,7 @@ Rough breakdown of next steps / tasks.
     - [x] delete
   - [x] export points to an SVG file
   - [x] set up github pages or similar to host the page
-  - [ ] add ability to define outline with a couple simple shapes?
+  - [x] add ability to define outline with a couple simple shapes
 - [ ] **We Got Lines**
   - [ ] allow connecting any two points with a line
   - [ ] pick color for line

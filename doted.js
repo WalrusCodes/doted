@@ -4,6 +4,8 @@ let insertedImage = null;
 
 const MAX_DISTANCE_TO_ADD_OFFSET_POINT = 50;
 
+const IMAGE_MARGIN = 10;
+
 // Shows error message.
 function showError(msg) {
   const el = document.getElementById("errorMessage");
@@ -40,22 +42,40 @@ function handleFileInput(fileList) {
       showError("failed to load image");
       return;
     }
+    const cWidth = canvas.width - 2 * IMAGE_MARGIN;
+    const cHeight = canvas.height - 2 * IMAGE_MARGIN;
     // Pick scaling to height or width so that the image fits within canvas.
-    if (img.width / canvas.width > img.height / canvas.height) {
-      img.scaleToWidth(canvas.width, true);
+    if (img.width / cWidth > img.height / cHeight) {
+      img.scaleToWidth(cWidth, true);
     } else {
-      img.scaleToHeight(canvas.height, true);
+      img.scaleToHeight(cHeight, true);
     }
+    img.set("left", IMAGE_MARGIN);
+    img.set("top", IMAGE_MARGIN);
     img.set("selectable", false);
     // Don't change mouse cursor, don't apply events.
     img.set("evented", false);
     canvas.add(img);
     img.sendToBack();
     // Remove the old image if one exists.
+    // TODO: instead of having a global, find by type?
     if (insertedImage !== null) {
       canvas.remove(insertedImage);
     }
     insertedImage = img;
+
+    // If outline hasn't been modified manually yet, adjust it to image
+    // boundary.
+    const poly = canvas.getObjects("polygon")[0];
+    if (!poly.modifiedManually) {
+      poly.points = buildDefaultPoints(
+        img.left,
+        img.top,
+        img.width * img.scaleX,
+        img.height * img.scaleY
+      );
+      updatePolygonControls(poly);
+    }
   });
 }
 
@@ -167,6 +187,16 @@ function handleDoubleClick(options) {
   }
 }
 
+// Builds points array for canvas size minus a margin.
+function buildDefaultPoints(left, top, width, height) {
+  return [
+    { x: left, y: top },
+    { x: left + width, y: top },
+    { x: left + width, y: top + height },
+    { x: left, y: top + height },
+  ];
+}
+
 // Initializes and configures fabricjs canvas.
 function initCanvas() {
   const canvasObj = document.getElementById("canvas");
@@ -190,17 +220,18 @@ function initCanvas() {
     }
   });
 
-  // TODO: add/update when image gets loaded.
-  const points = [
-    { x: 0, y: 0 },
-    { x: 100, y: 0 },
-    { x: 100, y: 100 },
-    { x: 0, y: 100 },
-  ];
+  // Create a default outline. If it hasn't been altered by the time image gets
+  // loaded, we'll adjust it to the size of the image.
+  const points = buildDefaultPoints(
+    IMAGE_MARGIN,
+    IMAGE_MARGIN,
+    canvas.width - 2 * IMAGE_MARGIN,
+    canvas.height - 2 * IMAGE_MARGIN
+  );
 
   const p = new fabric.Polygon(points, {
-    left: 10,
-    top: 10,
+    left: IMAGE_MARGIN,
+    top: IMAGE_MARGIN,
     evented: false,
     selectable: false,
     fill: "rgba(0,0,0,0)",
@@ -212,6 +243,9 @@ function initCanvas() {
     cornerColor: "rgba(0,0,255,0.5)",
     // Don't show the border around a point when it's selected.
     hasBorders: false,
+    // Custom property to track whether the outline was modified manually or
+    // not.
+    modifiedManually: false,
   });
   canvas.add(p);
 }
@@ -220,7 +254,10 @@ function initCanvas() {
 function saveSvg() {
   // Create a simple canvas with a simpler outline polygon and point
   // presentation before exporting it to SVG.
-  const canvasOut = new fabric.Canvas();
+  const canvasOut = new fabric.Canvas("", {
+    width: canvas.width,
+    height: canvas.height,
+  });
 
   canvas.forEachObject((obj) => {
     if (obj.type === "circle") {
@@ -289,7 +326,6 @@ function outlinePolygonPositionHandler(_dim, _finalMatrix, fabricObject) {
 //
 // Cribbed from fabricjs demos.
 function actionHandler(_eventData, transform, x, y) {
-  console.log(`actionHandler: ${_eventData} ${transform}`);
   // Polygon being moved around.
   const poly = transform.target;
 
@@ -328,6 +364,8 @@ function actionHandler(_eventData, transform, x, y) {
   var newY =
     (poly.points[otherIndex].y - poly.pathOffset.y) / polygonBaseSize.y;
   poly.setPositionByOrigin(absolutePoint, newX + 0.5, newY + 0.5);
+
+  poly.modifiedManually = true;
 
   return true;
 }
