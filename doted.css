@@ -21,7 +21,6 @@ body {
   /* This makes it fill the whole remaining space since other divs have no flex
    * value given. */
   flex: 1;
-  background: rgba(0, 255, 0, 0.2);
 }
 
 .error-message {
