@@ -21,11 +21,8 @@ Rough breakdown of next steps / tasks.
   - [ ] delete lines
   - [ ] edit color/thickness for existing lines?
   - [ ] draw lines in output file
-- [ ] **We Got Files**
-  - [ ] save points (& lines) to a file (JSON?)
-  - [ ] embed the imported image?
-  - [ ] load points (& lines) + image
 - **Misc**
+  - [ ] load back SVG files we saved
   - [ ] license
   - [ ] favicon
   - [ ] undo/redo: see [this](https://medium.com/@alm.ozdmr/fabric-js-history-operations-undo-redo-and-useful-tips-edeab8d4f48d)

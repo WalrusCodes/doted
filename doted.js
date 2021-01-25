@@ -1,10 +1,7 @@
-let canvas = null;
-// fabric.Image object if one already is inserted.
-let insertedImage = null;
-
 const MAX_DISTANCE_TO_ADD_OFFSET_POINT = 50;
-
 const IMAGE_MARGIN = 10;
+
+let canvas = null;
 
 // Shows error message.
 function showError(msg) {
@@ -36,33 +33,20 @@ function handleFileInput(fileList) {
     return;
   }
 
-  // TODO: remove the object URL if one was created in the past.
+  // TODO(cleanup): remove the object URL if one was created in the past.
   fabric.Image.fromURL(URL.createObjectURL(file), function (img) {
     if (img.width === 0) {
       showError("failed to load image");
       return;
     }
-    const cWidth = canvas.width - 2 * IMAGE_MARGIN;
-    const cHeight = canvas.height - 2 * IMAGE_MARGIN;
-    // Pick scaling to height or width so that the image fits within canvas.
-    if (img.width / cWidth > img.height / cHeight) {
-      img.scaleToWidth(cWidth, true);
-    } else {
-      img.scaleToHeight(cHeight, true);
-    }
-    img.set("left", IMAGE_MARGIN);
-    img.set("top", IMAGE_MARGIN);
-    img.set("selectable", false);
+
+    // Remove old image if one exists.
+    canvas.getObjects("image").map((i) => canvas.remove(i));
+    scaleImageToCanvas(img);
     // Don't change mouse cursor, don't apply events.
-    img.set("evented", false);
+    img.set({ selectable: false, evented: false });
     canvas.add(img);
     img.sendToBack();
-    // Remove the old image if one exists.
-    // TODO: instead of having a global, find by type?
-    if (insertedImage !== null) {
-      canvas.remove(insertedImage);
-    }
-    insertedImage = img;
 
     // If outline hasn't been modified manually yet, adjust it to image
     // boundary.
@@ -77,6 +61,28 @@ function handleFileInput(fileList) {
       updatePolygonControls(poly);
     }
   });
+}
+
+// Scales the fabricjs.Image object to fit the canvas, picking scaling height
+// or width so that we fit the canvas.
+//
+// Returns the ratio between old and new scale.
+function scaleImageToCanvas(img) {
+  const prevWidth = img.width * img.scaleX;
+
+  const cWidth = canvas.width - 2 * IMAGE_MARGIN;
+  const cHeight = canvas.height - 2 * IMAGE_MARGIN;
+  // Pick scaling to height or width so that the image fits within canvas.
+  if (img.width / cWidth > img.height / cHeight) {
+    img.scaleToWidth(cWidth, true);
+  } else {
+    img.scaleToHeight(cHeight, true);
+  }
+  const newWidth = img.width * img.scaleX;
+
+  img.set({ left: IMAGE_MARGIN, top: IMAGE_MARGIN });
+
+  return newWidth / prevWidth;
 }
 
 // Cribbed from
@@ -174,6 +180,8 @@ function modifyPoints(options) {
       strokeWidth: 2,
       // Don't show the border around a point when it's selected.
       hasBorders: false,
+      // XXX
+      objectCaching: false,
     })
   );
 }
@@ -199,10 +207,11 @@ function buildDefaultPoints(left, top, width, height) {
 
 // Initializes and configures fabricjs canvas.
 function initCanvas() {
+  const canvasWrapper = document.getElementById("canvasWrapper");
   const canvasObj = document.getElementById("canvas");
   // TODO: size automatically to fill the window?
-  canvasObj.width = 800;
-  canvasObj.height = 400;
+  canvasObj.width = canvasWrapper.clientWidth;
+  canvasObj.height = canvasWrapper.clientHeight;
 
   // Create Fabric.js Canvas object, point it at our canvas by id.
   canvas = new fabric.Canvas("canvas");
@@ -308,7 +317,6 @@ function isEditPointsMode() {
 //
 // Cribbed from fabricjs demos.
 function outlinePolygonPositionHandler(_dim, _finalMatrix, fabricObject) {
-  // console.log(`opp: ${this.pointIndex}`);
   var x = fabricObject.points[this.pointIndex].x - fabricObject.pathOffset.x,
     y = fabricObject.points[this.pointIndex].y - fabricObject.pathOffset.y;
   return fabric.util.transformPoint(
@@ -396,11 +404,9 @@ function changeEditMode() {
     // Make all selectable, polygons non-selectable.
     canvas.forEachObject((obj) => {
       if (obj.type === "circle") {
-        obj.set("evented", true);
-        obj.set("selectable", true);
+        obj.set({ evented: true, selectable: true });
       } else if (obj.type === "polygon") {
-        obj.set("evented", false);
-        obj.set("selectable", false);
+        obj.set({ evented: false, selectable: false });
       }
     });
     // Unselect the outline object if selected.
@@ -413,11 +419,9 @@ function changeEditMode() {
     // Make all points non-selectable, polygons selectable.
     canvas.forEachObject((obj) => {
       if (obj.type === "circle") {
-        obj.set("evented", false);
-        obj.set("selectable", false);
+        obj.set({ evented: false, selectable: false });
       } else if (obj.type === "polygon") {
-        obj.set("evented", true);
-        obj.set("selectable", true);
+        obj.set({ evented: true, selectable: true });
       }
     });
 
@@ -425,6 +429,57 @@ function changeEditMode() {
     updatePolygonControls(poly);
     canvas.setActiveObject(poly);
   }
+}
+
+function resizeHandler() {
+  const oldH = canvas.height;
+  const oldW = canvas.width;
+
+  const canvasWrapper = document.getElementById("canvasWrapper");
+  const canvasObj = document.getElementById("canvas");
+  // TODO: size automatically to fill the window?
+  canvasObj.width = canvasWrapper.clientWidth;
+  canvasObj.height = canvasWrapper.clientHeight;
+  canvas.setWidth(canvasWrapper.clientWidth);
+  canvas.setHeight(canvasWrapper.clientHeight);
+  canvas.calcOffset();
+
+  const newH = canvas.height;
+  const newW = canvas.width;
+
+  // Scale the polygon and move the points. We handle things slightly
+  // differently depending on whether an image has been loaded or not. If an
+  // image exists, we scale relative to how it got scaled (dimensions locked).
+  // Otherwise, we scale X and Y separately.
+  let scaleX = (newW - 2 * IMAGE_MARGIN) / (oldW - 2 * IMAGE_MARGIN);
+  let scaleY = (newH - 2 * IMAGE_MARGIN) / (oldH - 2 * IMAGE_MARGIN);
+  canvas.getObjects("image").map((img) => {
+    // Image exists, scale both X and Y the same.
+    const scale = scaleImageToCanvas(img);
+    scaleX = scale;
+    scaleY = scale;
+  });
+
+  // Scale the outline polygon.
+  canvas.getObjects("polygon").map((poly) => {
+    poly.points = poly.points.map(({ x, y }) => ({
+      x: (x - IMAGE_MARGIN) * scaleX + IMAGE_MARGIN,
+      y: (y - IMAGE_MARGIN) * scaleY + IMAGE_MARGIN,
+    }));
+    poly.setCoords();
+    updatePolygonControls(poly);
+  });
+
+  // Scale the circle locations.
+  canvas.getObjects("circle").map((circle) => {
+    circle.set({
+      left: (circle.left - IMAGE_MARGIN) * scaleX + IMAGE_MARGIN,
+      top: (circle.top - IMAGE_MARGIN) * scaleY + IMAGE_MARGIN,
+    });
+    circle.setCoords();
+  });
+
+  canvas.requestRenderAll();
 }
 
 // Called on page load, sets up handlers & canvas.
@@ -451,6 +506,8 @@ function init() {
   editModePoints.addEventListener("change", () => changeEditMode(), false);
   const editModeOutline = document.getElementById("editModeOutline");
   editModeOutline.addEventListener("change", () => changeEditMode(), false);
+
+  window.addEventListener("resize", resizeHandler);
 
   // XXX: for development:
   // setTimeout(() => {
