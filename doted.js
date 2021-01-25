@@ -218,7 +218,36 @@ function initCanvas() {
 
 // Generates an SVG and prompts the user to download it.
 function saveSvg() {
-  const blob = new Blob([canvas.toSVG()], { type: "image/svg+xml" });
+  // Create a simple canvas with a simpler outline polygon and point
+  // presentation before exporting it to SVG.
+  const canvasOut = new fabric.Canvas();
+
+  canvas.forEachObject((obj) => {
+    if (obj.type === "circle") {
+      // TODO: make the hole radius configurable.
+      const radius = 10;
+      canvasOut.add(
+        new fabric.Circle({
+          left: obj.left + obj.radius - radius,
+          top: obj.top + obj.radius - radius,
+          radius: radius,
+          fill: "rgba(0, 0, 0, 0)",
+          stroke: "black",
+        })
+      );
+    } else if (obj.type === "polygon") {
+      canvasOut.add(
+        new fabric.Polygon(obj.points, {
+          left: obj.left,
+          top: obj.top,
+          fill: "rgba(0,0,0,0)",
+          strokeWidth: 1,
+          stroke: "black",
+        })
+      );
+    }
+  });
+  const blob = new Blob([canvasOut.toSVG()], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
