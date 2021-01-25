@@ -2,6 +2,8 @@ let canvas = null;
 // fabric.Image object if one already is inserted.
 let insertedImage = null;
 
+const MAX_DISTANCE_TO_ADD_OFFSET_POINT = 50;
+
 // Shows error message.
 function showError(msg) {
   const el = document.getElementById("errorMessage");
@@ -57,17 +59,77 @@ function handleFileInput(fileList) {
   });
 }
 
-// Handles a doubleclick on canvas.
-function handleDoubleClick(options) {
-  if (!isEditPointsMode()) {
-    // TODO: here we'll want to have point insertion and removal for the
-    // outline:
-    // * clicking on existing point should remove it unless there's only 3
-    //   points left.
-    // * clicking on empty space should find the closest line, then the point
-    //   on this line, then insert it there.
+// Cribbed from
+// https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+function distToSegmentSquared(p, v, w) {
+  function sqr(x) {
+    return x * x;
+  }
+
+  function dist2(v, w) {
+    return sqr(v.x - w.x) + sqr(v.y - w.y);
+  }
+
+  const l2 = dist2(v, w);
+  if (l2 == 0) return dist2(p, v);
+
+  let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+}
+
+function distToSegment(p, v, w) {
+  return Math.sqrt(distToSegmentSquared(p, v, w));
+}
+
+// Finds which of polygon segments is closest to the given point.
+//
+// Returns index for the line (index, index+1) that's closest to given clicked
+// point. If the point is too far from any lines, returns -1.
+function findPolySegmentClosestToPoint(poly, p) {
+  let dists = poly.points.map((pt1, index) => {
+    const pt2 = poly.points[(index + 1) % poly.points.length];
+    const dist = distToSegment(p, pt1, pt2);
+    return { dist: dist, index: index };
+  });
+  dists.sort((a, b) => a.dist - b.dist);
+  if (dists[0].dist < MAX_DISTANCE_TO_ADD_OFFSET_POINT) {
+    return dists[0].index;
+  } else {
+    return -1;
+  }
+}
+
+// Handles adding/removing points from outline.
+function modifyOutlinePoints(options) {
+  const poly = options.target;
+  if (!poly) {
+    // Didn't click on the object.
     return;
   }
+  // Calculate pointer inside the canvas.
+  const pointer = canvas.getPointer(options.e, true);
+  const corner = poly._findTargetCorner(pointer, false);
+  if (corner) {
+    // Delete a point if we have at least 4 points.
+    if (poly.points.length >= 4) {
+      const index = poly.controls[corner].pointIndex;
+      poly.points.splice(index, 1);
+      updatePolygonControls(poly);
+    }
+  } else {
+    const mouseLocalPosition = poly
+      .toLocalPoint(pointer, "center", "center")
+      .add(poly.pathOffset);
+    const index = findPolySegmentClosestToPoint(poly, mouseLocalPosition);
+    if (index < 0) return;
+    poly.points.splice(index + 1, 0, mouseLocalPosition);
+    updatePolygonControls(poly);
+  }
+}
+
+// Handles adding/removing non-outline points.
+function modifyPoints(options) {
   if (options.target !== null) {
     // Existing point double-clicked - remove it.
     canvas.remove(options.target);
@@ -94,6 +156,15 @@ function handleDoubleClick(options) {
       hasBorders: false,
     })
   );
+}
+
+// Handles a doubleclick on canvas.
+function handleDoubleClick(options) {
+  if (isEditPointsMode()) {
+    modifyPoints(options);
+  } else {
+    modifyOutlinePoints(options);
+  }
 }
 
 // Initializes and configures fabricjs canvas.
@@ -189,6 +260,7 @@ function outlinePolygonPositionHandler(_dim, _finalMatrix, fabricObject) {
 //
 // Cribbed from fabricjs demos.
 function actionHandler(_eventData, transform, x, y) {
+  console.log(`actionHandler: ${_eventData} ${transform}`);
   // Polygon being moved around.
   const poly = transform.target;
 
@@ -314,18 +386,16 @@ function init() {
   editModeOutline.addEventListener("change", () => changeEditMode(), false);
 
   // XXX: for development:
-  /*
-  setTimeout(() => {
-    editModeOutline.click();
-  }, 500);
-
-  setTimeout(() => {
-    const poly = canvas.getObjects("polygon")[0];
-    poly.points.push({ x: 50, y: 25 });
-    updatePolygonControls(poly);
-    console.log(poly.points);
-  }, 1000);
-  */
+  // setTimeout(() => {
+  //   editModeOutline.click();
+  // }, 500);
+  //
+  // setTimeout(() => {
+  //   const poly = canvas.getObjects("polygon")[0];
+  //   poly.points.push({ x: 50, y: 25 });
+  //   updatePolygonControls(poly);
+  //   console.log(poly.points);
+  // }, 1000);
 }
 
 window.addEventListener("load", () => init(), false);
