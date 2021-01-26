@@ -21,6 +21,8 @@ Rough breakdown of next steps / tasks.
   - [ ] delete lines
   - [ ] edit color/thickness for existing lines?
   - [ ] draw lines in output file
+- **Bugs**
+  - [ ] shrinking the page vertically doesn't shrink the canvas
 - **Misc**
   - [ ] load back SVG files we saved
   - [ ] license
