@@ -180,8 +180,6 @@ function modifyPoints(options) {
       strokeWidth: 2,
       // Don't show the border around a point when it's selected.
       hasBorders: false,
-      // XXX
-      objectCaching: false,
     })
   );
 }
@@ -261,17 +259,24 @@ function initCanvas() {
 
 // Generates an SVG and prompts the user to download it.
 function saveSvg() {
-  // Create a simple canvas with a simpler outline polygon and point
-  // presentation before exporting it to SVG.
-  const canvasOut = new fabric.Canvas("", {
+  // Values from input boxes.
+  const outlineWidthMm = document.getElementById("outlineWidth").value;
+  const holeDiameterMm = document.getElementById("holeDiameter").value;
+
+  const poly = canvas.getObjects("polygon")[0];
+  const outlineHeightMm = (outlineWidthMm * poly.height) / poly.width;
+  const holeDiameter = (holeDiameterMm / outlineWidthMm) * poly.width;
+
+  // Create another canvas that we'll use for exporting. This new canvas will
+  // have simpler outlines, scaled hole sizes, etc.
+  const canvasOut = new fabric.Canvas(null, {
     width: canvas.width,
     height: canvas.height,
   });
 
   canvas.forEachObject((obj) => {
     if (obj.type === "circle") {
-      // TODO: make the hole radius configurable.
-      const radius = 10;
+      const radius = holeDiameter / 2;
       canvasOut.add(
         new fabric.Circle({
           left: obj.left + obj.radius - radius,
@@ -293,7 +298,18 @@ function saveSvg() {
       );
     }
   });
-  const blob = new Blob([canvasOut.toSVG()], { type: "image/svg+xml" });
+
+  const svgText = canvasOut.toSVG({
+    width: `${outlineWidthMm}mm`,
+    height: `${outlineHeightMm}mm`,
+    viewbox: {
+      x: poly.left,
+      y: poly.top,
+      width: poly.width,
+      height: poly.height,
+    },
+  });
+  const blob = new Blob([svgText], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -485,13 +501,12 @@ function resizeHandler() {
 // Called on page load, sets up handlers & canvas.
 function init() {
   const loadBtn = document.getElementById("loadImageButton");
+  const fileInput = document.getElementById("fileInput");
   // Clicking on "Load image" button opens the hidden filepicker.
   loadBtn.addEventListener("click", () => fileInput.click(), false);
 
   const saveSvgBtn = document.getElementById("saveSvgButton");
-  saveSvgBtn.addEventListener("click", () => saveSvg(), false);
-
-  const fileInput = document.getElementById("fileInput");
+  saveSvgBtn.addEventListener("click", saveSvg, false);
 
   initCanvas();
   // Picking a file calls handleFileInput.
@@ -503,9 +518,9 @@ function init() {
 
   const editModePoints = document.getElementById("editModePoints");
   editModePoints.checked = true;
-  editModePoints.addEventListener("change", () => changeEditMode(), false);
+  editModePoints.addEventListener("change", changeEditMode, false);
   const editModeOutline = document.getElementById("editModeOutline");
-  editModeOutline.addEventListener("change", () => changeEditMode(), false);
+  editModeOutline.addEventListener("change", changeEditMode, false);
 
   window.addEventListener("resize", resizeHandler);
 
@@ -522,4 +537,4 @@ function init() {
   // }, 1000);
 }
 
-window.addEventListener("load", () => init(), false);
+window.addEventListener("load", init, false);

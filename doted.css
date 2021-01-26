@@ -12,8 +12,8 @@ body {
   border: 1px solid black;
 }
 
-.mode {
-  margin: 10px;
+.buttons-and-stuff {
+  padding: 10px;
 }
 
 .canvas-wrapper {

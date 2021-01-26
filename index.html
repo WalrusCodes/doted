@@ -24,12 +24,20 @@
     <div class="canvas-wrapper" id="canvasWrapper">
       <canvas id="canvas"></canvas>
     </div>
-    <div class="mode">
-      Mode:
-      <input type="radio" id="editModePoints" name="editMode" />
-      <label for="editModePoints">Edit Points</label>
-      <input type="radio" id="editModeOutline" name="editMode" />
-      <label for="editModeOutline">Edit Outline</label>
+    <div class="buttons-and-stuff">
+      <div>
+        <b>Mode:</b>
+        <input type="radio" id="editModePoints" name="editMode" />
+        <label for="editModePoints">Edit Points</label>
+        <input type="radio" id="editModeOutline" name="editMode" />
+        <label for="editModeOutline">Edit Outline</label>
+      </div>
+      <div>
+        <b>Size:</b>
+        Outline width:
+        <input id="outlineWidth" type="text" size="4" value="100" /> mm Hole
+        diameter: <input id="holeDiameter" type="text" size="4" value="1.0" /> mm
+      </div>
     </div>
     <div class="help">
       Double click to add a point. Double click on an existing point to delete
